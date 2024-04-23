@@ -5,28 +5,46 @@ import requests
 import aiohttp
 import asyncio
 import threading
+import time
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 
-async def searchSong():
-    search_query = dpg.get_value("search_box")
-    print('searchQuery: ', search_query)
+def make_api_callout(search_query):
     base_url = "https://api.genius.com"
     headers = {'Authorization': 'Bearer ' + TOKEN}
     search_url = base_url + "/search"
     data = {'q': search_query}
-    async with aiohttp.ClientSession() as session:
-        async with session.get(search_url) as resp:
-            search_result = await resp.json()
-            print(search_result)
-    
-    # response = requests.get(search_url, data=data, headers=headers)
-    # json = response.json()
-    # print(f'json response: {json}')
-    
+    response = requests.get(search_url, data=data, headers=headers)
+    json = response.json()
+    time.sleep(2)
+    print(f'json in function: {json}')
+    return json;
 
+def searchSong():
+    search_query = dpg.get_value("search_box")
+    print('searchQuery: ', search_query)
+    
+    # async with aiohttp.ClientSession() as session:
+    #     async with session.get(search_url) as resp:
+    #         search_result = await resp.json()
+    #         print(search_result)
+    
+    
+    # print(json)
+    json_val = threading.Thread(target=make_api_callout, args=(search_query, ), daemon=True)
+    json_val.start()
+    json_val.join()
+    json_data = json_val
+    print(json_data)
+    # if (json_data['meta']['status'] == 200):
+    #     print('status code 200: ', json_data)
+    #     response = json_data['response']
+    #     hits = response['hits']
+    #     print(f'hits: {hits}')
+
+    # print(f'json response: {json}')
 
 def main():
     dpg.create_context()
@@ -43,13 +61,10 @@ def main():
         dpg.add_input_text(tag="search_box")
         dpg.add_button(label="Search", tag="search-btn", callback=searchSong)
 
-
     dpg.show_viewport()
     dpg.set_primary_window("Lyrical", True)
     dpg.start_dearpygui()
     dpg.destroy_context()
-
-    asyncio.run(searchSong)
 
 if __name__ == "__main__":
     main()
